@@ -45,9 +45,29 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
+@app.get("/")
+async def root():
+    return {
+        "ok": True,
+        "service": os.getenv("K_SERVICE", ""),
+        "revision": os.getenv("K_REVISION", ""),
+    }
+
 @app.get("/healthz")
 async def healthz():
-    return {"ok": True}
+    return {
+        "ok": True,
+        "service": os.getenv("K_SERVICE", ""),
+        "revision": os.getenv("K_REVISION", ""),
+    }
+
+@app.get("/healthz/")
+async def healthz_slash():
+    return {
+        "ok": True,
+        "service": os.getenv("K_SERVICE", ""),
+        "revision": os.getenv("K_REVISION", ""),
+    }
 
 
 @app.post("/v1/jobs")
