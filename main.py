@@ -7,6 +7,8 @@ from typing import Optional, Dict, Any
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+import boto3
 
 app = FastAPI()
 
@@ -112,3 +114,55 @@ async def get_job(job_id: str, request: Request):
             content={"error": {"code": "JOB_NOT_FOUND", "message": "jobId not found"}},
         )
     return job
+
+
+
+class SignRequest(BaseModel):
+    videoKey: str | None = None
+    audioKey: str | None = None
+    outputKey: str | None = None
+    expiresSec: int = 3600
+
+class SignResponse(BaseModel):
+    videoGetUrl: str | None = None
+    audioGetUrl: str | None = None
+    outputPutUrl: str | None = None
+
+def r2_client():
+    account_id = os.environ["CF_R2_ACCOUNT_ID"]
+    return boto3.client(
+        "s3",
+        endpoint_url=f"https://{account_id}.r2.cloudflarestorage.com",
+        aws_access_key_id=os.environ["CF_R2_ACCESS_KEY_ID"],
+        aws_secret_access_key=os.environ["CF_R2_SECRET_ACCESS_KEY"],
+        region_name="auto",
+    )
+@app.post("/v1/sign", response_model=SignResponse)
+def sign(req: SignRequest):
+    s3 = r2_client()
+    bucket = os.environ["CF_R2_BUCKET"]
+
+    res = {}
+
+    if req.videoKey:
+        res["videoGetUrl"] = s3.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": bucket, "Key": req.videoKey},
+            ExpiresIn=req.expiresSec,
+        )
+
+    if req.audioKey:
+        res["audioGetUrl"] = s3.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": bucket, "Key": req.audioKey},
+            ExpiresIn=req.expiresSec,
+        )
+
+    if req.outputKey:
+        res["outputPutUrl"] = s3.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": bucket, "Key": req.outputKey},
+            ExpiresIn=req.expiresSec,
+        )
+
+    return res
