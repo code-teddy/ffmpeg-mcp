@@ -12,7 +12,7 @@ import boto3
 
 app = FastAPI()
 
-MCP_TOKEN = os.getenv("MCP_TOKEN", "").strip()
+MCP_TOKEN = os.environ("MCP_TOKEN", "").strip()
 
 # In-memory job store (skeleton only; next step we move to Firestore/Redis)
 jobs: Dict[str, Dict[str, Any]] = {}

@@ -7,7 +7,7 @@ import requests
 import base64
 
 def must_env(name: str) -> str:
-    v = os.getenv(name)
+    v = os.environ(name)
     if not v:
         raise RuntimeError(f"Missing env: {name}")
     return v
